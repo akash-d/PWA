@@ -1,3 +1,6 @@
+/**
+ * this variable will store the instance of install prompt
+ */
 var deferredPrompt;
 var enableNotificationsButtons = document.querySelectorAll('.enable-notifications');
 
@@ -15,7 +18,10 @@ if ('serviceWorker' in navigator) {
             console.log(err);
         });
 }
-
+/**
+ * this event is fired before the install prompt is shown by the
+ * browser, we can control now when to fire it.
+ */
 window.addEventListener('beforeinstallprompt', function(event) {
     console.log('beforeinstallprompt fired');
     event.preventDefault();
@@ -26,7 +32,7 @@ window.addEventListener('beforeinstallprompt', function(event) {
 function displayConfirmNotification() {
     if ('serviceWorker' in navigator) {
         var options = {
-            body: 'You successfully subscribed to our Notification service!',
+            body: 'Yay!!!! Notifications will screw your life now!',
             icon: '/images/icons/app-icon-96x96.png',
             image: '/images/img_bg_1.jpg',
             dir: 'ltr',
@@ -99,14 +105,52 @@ function askForNotificationPermission() {
             console.log('No notification permission granted!');
         } else {
             configurePushSub();
-            // displayConfirmNotification();
         }
     });
 }
 
-if ('Notification' in window && 'serviceWorker' in navigator) {
-    for (var i = 0; i < enableNotificationsButtons.length; i++) {
-        enableNotificationsButtons[i].style.display = 'inline-block';
+
+for (var i = 0; i < enableNotificationsButtons.length; i++) {
+    if ('Notification' in window && 'serviceWorker' in navigator) {
         enableNotificationsButtons[i].addEventListener('click', askForNotificationPermission);
+    } else {
+        enableNotificationsButtons[i].addEventListener('click', function() {
+            alert('oh no, notifications are not supported');
+        });
     }
+
+}
+
+var promise = new Promise(function(resolve, reject) {
+    setTimeout(function() {
+        resolve();
+    }, 30000);
+});
+
+
+if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    var module = {
+        id: 'sync module',
+        name: 'module to be synced',
+        meta: 'this is the module that we are gonna sync in bacground'
+    }
+    promise.then(function() {
+        navigator.serviceWorker.ready.then(function(sw) {
+            writeData('sync-modules', module).then(function() {
+                return sw.sync.register('background-sync')
+            }).then(function() {
+                alert("your module will be synced in background");
+            })
+        }).catch(function(err) {
+            console.log(err);
+        })
+
+    })
+
+} else {
+    // directly submit the post on user action.
+    /**
+     * This is progressive enchancement (if we write this code obviously ;)
+     * so if feature is available use it else work like it never was there
+     */
 }

@@ -72,24 +72,24 @@ function trimCache(cacheName, maxItems) {
 }
 
 self.addEventListener('install', function(event) {
-    console.log('[Service Worker] Installing Service Worker ...', event);
+    console.log('**Log from inside service worker** Installing Service Worker ...', event);
     event.waitUntil(
         caches.open(CACHE_STATIC_NAME)
         .then(function(cache) {
-            console.log('[Service Worker] Precaching App Shell');
+            console.log('**Log from inside service worker** Precaching App Shell');
             cache.addAll(STATIC_FILES);
         })
     )
 });
 
 self.addEventListener('activate', function(event) {
-    console.log('[Service Worker] Activating Service Worker ....', event);
+    console.log('**Log from inside service worker** Activating Service Worker ....', event);
     event.waitUntil(
         caches.keys()
         .then(function(keyList) {
             return Promise.all(keyList.map(function(key) {
                 if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
-                    console.log('[Service Worker] Removing old cache.', key);
+                    console.log('**Log from inside service worker** Removing old cache.', key);
                     return caches.delete(key);
                 }
             }));
@@ -112,11 +112,12 @@ function isInArray(string, array) {
 self.addEventListener('fetch', function(event) {
 
     var url = '/api/modules';
-    if (event.request.url.indexOf(url) > -1 && event.request.method === 'GET') {
+    if (event.request.url.indexOf(url) !== -1 && event.request.method === 'GET') {
         event.respondWith(fetch(event.request)
             .then(function(res) {
                 var clonedRes = res.clone();
-                clearAllData('posts')
+                // clear all existing data from modules table in our index db
+                clearAllData('modules')
                     .then(function() {
                         return clonedRes.json();
                     })
@@ -143,7 +144,6 @@ self.addEventListener('fetch', function(event) {
                         .then(function(res) {
                             return caches.open(CACHE_DYNAMIC_NAME)
                                 .then(function(cache) {
-                                    // trimCache(CACHE_DYNAMIC_NAME, 3);
                                     cache.put(event.request.url, res.clone());
                                     return res;
                                 })
@@ -162,76 +162,36 @@ self.addEventListener('fetch', function(event) {
     }
 });
 
-// self.addEventListener('fetch', function(event) {
-//   event.respondWith(
-//     caches.match(event.request)
-//       .then(function(response) {
-//         if (response) {
-//           return response;
-//         } else {
-//           return fetch(event.request)
-//             .then(function(res) {
-//               return caches.open(CACHE_DYNAMIC_NAME)
-//                 .then(function(cache) {
-//                   cache.put(event.request.url, res.clone());
-//                   return res;
-//                 })
-//             })
-//             .catch(function(err) {
-//               return caches.open(CACHE_STATIC_NAME)
-//                 .then(function(cache) {
-//                   return cache.match('/offline.html');
-//                 });
-//             });
-//         }
-//       })
-//   );
-// });
 
-// self.addEventListener('fetch', function(event) {
-//   event.respondWith(
-//     fetch(event.request)
-//       .then(function(res) {
-//         return caches.open(CACHE_DYNAMIC_NAME)
-//                 .then(function(cache) {
-//                   cache.put(event.request.url, res.clone());
-//                   return res;
-//                 })
-//       })
-//       .catch(function(err) {
-//         return caches.match(event.request);
-//       })
-//   );
-// });
 
-// Cache-only
-// self.addEventListener('fetch', function (event) {
-//   event.respondWith(
-//     caches.match(event.request)
-//   );
-// });
 
-// Network-only
-// self.addEventListener('fetch', function (event) {
-//   event.respondWith(
-//     fetch(event.request)
-//   );
-// });
 
+
+
+
+
+/**
+ * Bacground sync
+ */
 self.addEventListener('sync', function(event) {
-    console.log('[Service Worker] Background syncing', event);
-    if (event.tag === 'sync-new-modules') {
-        console.log('[Service Worker] Syncing new modules');
+    console.log('**Log from inside service worker** Background syncing', event);
+    if (event.tag === 'background-sync') {
+        console.log('**Log from inside service worker** Syncing new modules');
         event.waitUntil(
             readAllData('sync-modules')
             .then(function(data) {
                 for (var dt of data) {
                     var postData = {
+                        id: dt.id,
                         name: dt.name,
-                        completeDate: dt.completeDate
+                        meta: dt.meta
                     };
                     fetch('/apis/post-modules', {
                             method: 'POST',
+                            headers: new Headers({
+                                'Content-Type': 'application/json',
+                                'accepts': 'application/json'
+                            }),
                             body: JSON.stringify(postData)
                         })
                         .then(function(res) {
@@ -239,7 +199,7 @@ self.addEventListener('sync', function(event) {
                             if (res.ok) {
                                 res.json()
                                     .then(function(resData) {
-                                        deleteItemFromData('sync-modules', resData.id);
+                                        clearAllData('sync-modules');
                                     });
                             }
                         })
@@ -252,7 +212,9 @@ self.addEventListener('sync', function(event) {
         );
     }
 });
-
+/**
+ * When notification is clicked
+ */
 self.addEventListener('notificationclick', function(event) {
     var notification = event.notification;
     var action = event.action;
@@ -265,8 +227,31 @@ self.addEventListener('notificationclick', function(event) {
     } else {
         console.log(action);
         event.waitUntil(
+            /**
+             * clients.matchAll() returns a Promise that 
+             * resolves with all the clients controlled by this service worker
+             */
+            /**
+             * The WindowClient interface of the ServiceWorker API
+             *  represents the scope of a service worker client that
+             *  is a document in a browser context, controlled by an
+             *  active worker. The service worker client independently
+             *  selects and uses a service worker for its own loading
+             *  and sub-resources.
+             * The Client interface represents an executable context 
+             * such as a Worker, or a SharedWorker. Window clients are
+             *  represented by the more-specific WindowClient. You can
+             *  get Client/WindowClient objects from methods such as
+             *  Clients.matchAll() and Clients.get().
+             * The Clients interface provides access to Client objects.
+             *  Access it via self.clients within a service worker.
+             */
             clients.matchAll()
             .then(function(clis) {
+                /**
+                 * Find returns first of the guys who satisfy the condition
+                 * i.e. for which we return true.
+                 */
                 var client = clis.find(function(c) {
                     return c.visibilityState === 'visible';
                 });
@@ -282,11 +267,16 @@ self.addEventListener('notificationclick', function(event) {
         );
     }
 });
-
+/**
+ * When some notification is closed
+ */
 self.addEventListener('notificationclose', function(event) {
     console.log('Notification was closed', event);
 });
 
+/**
+ * handle push notification
+ */
 self.addEventListener('push', function(event) {
     console.log('Push Notification received', event);
 

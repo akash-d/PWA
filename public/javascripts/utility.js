@@ -1,11 +1,24 @@
-var dbPromise = idb.open('posts-store', 1, function(db) {
+/**
+ * this is index db wrapper idb, we are using this for storing dynamic data 
+ * like json from api's
+ * Now we are having one data base --> module-store
+ * with 2 tables --> 1) modules and sync-modules
+ * modules: is used to store data got from server
+ * sync-modules: is used to store data pushed to server for background sync
+ * incase internet connection is not available.
+ */
+var dbPromise = idb.open('module-store', 1, function(db) {
     if (!db.objectStoreNames.contains('modules')) {
-        db.createObjectStore('posts', { keyPath: 'id' });
+        db.createObjectStore('modules', { keyPath: 'id' });
     }
     if (!db.objectStoreNames.contains('sync-modules')) {
-        db.createObjectStore('sync-posts', { keyPath: 'id' });
+        db.createObjectStore('sync-modules', { keyPath: 'id' });
     }
 });
+/**
+ * The data we store here must have id properties in them.
+ */
+
 
 function writeData(st, data) {
     return dbPromise

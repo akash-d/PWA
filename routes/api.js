@@ -1,12 +1,16 @@
 var express = require('express');
 var router = express.Router();
-var tasks = [];
+var modules = [{
+    id: 'first module',
+    'name': 'Awesome PWA app built',
+    'meta': 'Hopefully this app will make you understand everything'
+}];
 var webpush = require("web-push");
 var pushSubscriptions = [];
 var webPushPublicKey = "BOUGSDXrCr9hl_kjNsDAcZvtMZHwm6GOAgOtERPNJX59Sg9D81n8YtRIxFQcAK8eYpvVV5_YrVH1m-_dofioIFw";
 var webPushPrivateKey = 'YA2NQ5ujDzQusBRlIjwAn9kqtP3HMhN4JON6L6Mqa3s';
 router.post('/post-modules', function(req, res, next) {
-    tasks.push(req.body);
+    modules.push(req.body);
     res.json({
         msg: 'created Sucessfully',
         statusCode: 200
@@ -14,7 +18,7 @@ router.post('/post-modules', function(req, res, next) {
 });
 
 router.get('/modules', function(req, res, next) {
-    res.json(tasks);
+    res.json(modules);
 });
 
 router.post('/store-subscriptions', function(req, res, next) {
