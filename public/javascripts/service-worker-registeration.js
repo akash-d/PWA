@@ -2,7 +2,7 @@
  * this variable will store the instance of install prompt
  */
 var deferredPrompt;
-var enableNotificationsButtons = document.querySelectorAll('.enable-notifications');
+// var enableNotificationsButtons = document.querySelectorAll('.enable-notifications');
 
 if (!window.Promise) {
     window.Promise = Promise;
@@ -110,16 +110,16 @@ function askForNotificationPermission() {
 }
 
 
-for (var i = 0; i < enableNotificationsButtons.length; i++) {
-    if ('Notification' in window && 'serviceWorker' in navigator) {
-        enableNotificationsButtons[i].addEventListener('click', askForNotificationPermission);
-    } else {
-        enableNotificationsButtons[i].addEventListener('click', function() {
-            alert('oh no, notifications are not supported');
-        });
-    }
-
-}
+// for (var i = 0; i < enableNotificationsButtons.length; i++) {
+//     if ('Notification' in window && 'serviceWorker' in navigator) {
+//         enableNotificationsButtons[i].addEventListener('click', askForNotificationPermission);
+//     } else {
+//         enableNotificationsButtons[i].addEventListener('click', function() {
+//             alert('oh no, notifications are not supported');
+//         });
+//     }
+//
+//}
 
 var promise = new Promise(function(resolve, reject) {
     setTimeout(function() {
