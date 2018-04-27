@@ -6,11 +6,6 @@ var CACHE_DYNAMIC_NAME = 'dynamic-v3';
 var STATIC_FILES = [
     '/',
     '/index.html',
-    '/about.html',
-    '/contact.html',
-    '/error.html',
-    '/services.html',
-    '/work.html',
     '/stylesheets/animate.css',
     '/stylesheets/bootstrap.css',
     '/stylesheets/icomoon.css',
